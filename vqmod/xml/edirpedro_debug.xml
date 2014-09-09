@@ -1,0 +1,128 @@
+<modification>
+	<id>OpenCart Debug</id>
+	<version>1.0.0</version>
+	<vqmver>2.4.0</vqmver>
+	<author>edirpedro.com.br</author>
+
+	<file name="system/library/db.php">
+		<operation error="log">
+			<search position="replace">
+				<![CDATA[ 
+					return $this->driver->query($sql);
+				]]>
+			</search>
+			<add>
+				<![CDATA[  
+					global $debug_list, $debug_start;
+														
+			  		if(empty($debug_start))
+			  			$debug_start = microtime(true);
+
+			  		$start = microtime(true);
+			  		$result = $this->driver->query($sql);
+			  		$end = microtime(true);
+			  	
+			  		$backtrace = debug_backtrace();
+			  		
+			  		$debug_list[] = array(
+			  			'time' => $end - $start,
+			  			'sql' => $sql,
+			  			'backtrace' => $backtrace[0]
+			  			);
+			  		
+			  		return $result;
+			  	]]>
+			</add>
+		</operation>
+	</file>
+	
+	<file name="catalog/view/theme/*/template/common/footer.tpl">
+		<operation error="log">
+			<search position="before">
+				<![CDATA[ 
+					</body>
+				]]>
+			</search>
+			<add>
+				<![CDATA[  
+					<?php 
+						global $debug_list, $debug_start;
+						
+						$this->load->library('user');
+						$this->user = new User($this->registry);
+						if($this->user->hasPermission('modify', 'setting/setting')) {
+						
+							$time_queries = 0;
+							foreach($debug_list as $item) {
+								$time_queries += $item['time'];
+							}
+							$time_queries = number_format($time_queries, 4);
+					?>
+						<div id="debugger">
+							<h2>Debugging</h2>
+							<p>
+								Time running: <?= number_format(microtime(true) - $debug_start, 4); ?> seconds.<br>
+								Total queries: <?= count($debug_list) ?> queries in <?= $time_queries ?> seconds.<br>
+							</p>
+							<ol>
+							<? 
+							foreach($debug_list as $item) : 
+								$time_ms = number_format( sprintf('%0.1f', $item['time'] * 1000), 1, '.', '' );
+								if ( '1.' <= $time_ms )
+									$class = 'big_query_time';
+								elseif ( '0.5' <= $time_ms )
+									$class = 'high_query_time';
+								else 
+									$class = '';
+								
+								$class = ''; // Until check the best milliseconds comparison
+							?>
+								<li class="<?= $class ?>">
+									<b>Time:</b> <?= $time_ms ?>ms (<?= $item['time'] ?>s)<br>
+									<b>File:</b> <?= str_replace(dirname(DIR_APPLICATION), '', $item['backtrace']['file']) ?>:<?= $item['backtrace']['line'] ?><br>
+									<b>Query:</b> <?= $item['sql'] ?>
+								</li>
+							<? endforeach; ?>
+							</ol>
+						</div>
+						
+						<style>
+							#debugger {
+								margin: 30px; 
+								padding: 20px; 
+								font: normal 12px/18px "Lucida Console", Monaco, monospace; 
+								color: #000; 
+								border: 1px solid #ccc; 
+								background-color: #fff;						
+							}
+							#debugger h2 {
+								margin: 0 0 20px 0;
+							}
+							#debugger ol {
+								padding: 0 0 0 30px;
+								margin: 0;
+							}
+							#debugger li {
+								padding: 10px;
+								margin: 0;
+								border-bottom: 1px solid #eee;
+							}
+							#debugger li:nth-child(odd) {
+								background-color: #eee;
+							}
+							#debugger li:hover {
+								background-color: #ffc;
+							}
+							#debugger .high_query_time {
+								color: orange;
+							}
+							#debugger .big_query_time {
+								color: red;
+							}
+						</style>
+					<?php } ?>
+				]]>
+			</add>
+		</operation>
+	</file>
+</modification>
