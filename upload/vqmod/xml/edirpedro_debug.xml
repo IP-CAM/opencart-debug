@@ -73,9 +73,7 @@
 								elseif ( '0.5' <= $time_ms )
 									$class = 'high_query_time';
 								else 
-									$class = '';
-								
-								$class = ''; // Until check the best milliseconds comparison
+									$class = '';								
 							?>
 								<li class="<?= $class ?>">
 									<b>Time:</b> <?= $time_ms ?>ms (<?= $item['time'] ?>s)<br>
@@ -97,6 +95,10 @@
 							}
 							#debugger h2 {
 								margin: 0 0 20px 0;
+							}
+							#debugger b {
+								font: bold 12px/18px "Lucida Console", Monaco, monospace; 
+								color: #000;
 							}
 							#debugger ol {
 								padding: 0 0 0 30px;
